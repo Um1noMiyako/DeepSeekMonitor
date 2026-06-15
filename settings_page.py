@@ -1,7 +1,8 @@
 """设置页 — API Key / 刷新间隔 / 主题 / 导出"""
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                 QLineEdit, QPushButton, QComboBox, QFrame,
-                                QDialog, QFormLayout, QDialogButtonBox, QMessageBox)
+                                QDialog, QFormLayout, QDialogButtonBox, QMessageBox,
+                                QScrollArea, QSizePolicy)
 from PySide6.QtCore import Signal, Qt
 from storage import (save_api_key, get_api_key, delete_api_key, get_setting,
                      set_setting, export_all_snapshots, get_history_dir,
@@ -77,7 +78,18 @@ class SettingsPage(QWidget):
         self._load_values()
 
     def _build_ui(self):
-        layout = QVBoxLayout(self)
+        # 外层：ScrollArea 占满整个 SettingsPage
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+
+        # 内容容器
+        content = QWidget()
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(20)
 
@@ -146,6 +158,9 @@ class SettingsPage(QWidget):
         about.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(about)
         layout.addStretch()
+
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
 
     def _build_preset_section(self, layout):
         layout.addWidget(QLabel("📋 API Key 预设管理"))
