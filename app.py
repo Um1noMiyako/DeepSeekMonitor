@@ -33,7 +33,9 @@ class MonitorApp(QObject):
 
     def _refresh_now(self):
         if self._worker:
-            self._worker._refresh()
+            import threading
+            t = threading.Thread(target=self._worker._refresh, daemon=True)
+            t.start()
 
     def _on_balance_ready(self, balance):
         snap = get_latest_snapshot()

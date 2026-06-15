@@ -20,23 +20,22 @@ def get_db_path() -> str:
 def get_conn() -> sqlite3.Connection:
     global _DB
     if _DB is None:
-        _DB = sqlite3.connect(get_db_path())
+        _DB = sqlite3.connect(get_db_path(), check_same_thread=False)
         _DB.row_factory = sqlite3.Row
         _DB.execute("PRAGMA journal_mode=WAL")
         _DB.execute("PRAGMA foreign_keys=ON")
+        _ensure_tables(_DB)
     return _DB
 
 
-def init_db():
-    """建表（幂等）"""
-    conn = get_conn()
+def _ensure_tables(conn: sqlite3.Connection):
+    """自动建表（幂等），首次连接时调用"""
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS api_keys (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
             encrypted_key  TEXT NOT NULL,
             created_at     TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
-
         CREATE TABLE IF NOT EXISTS balance_snapshots (
             id                INTEGER PRIMARY KEY AUTOINCREMENT,
             total_balance     REAL NOT NULL,
@@ -46,7 +45,6 @@ def init_db():
             currency          TEXT NOT NULL DEFAULT 'CNY',
             fetched_at        TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
-
         CREATE TABLE IF NOT EXISTS settings (
             key   TEXT PRIMARY KEY,
             value TEXT NOT NULL
@@ -55,20 +53,51 @@ def init_db():
     conn.commit()
 
 
-# ── API Key 操作 ──────────────────────────────────
+def init_db():
+    """建表（幂等），显式调用以确保数据库就绪"""
+    _ensure_tables(get_conn())
 
-def save_api_key(encrypted_key: str):
-    """保存加密后的 API Key（替换旧值）"""
-    conn = get_conn()
-    conn.execute("DELETE FROM api_keys")
-    conn.execute("INSERT INTO api_keys (encrypted_key) VALUES (?)", (encrypted_key,))
-    conn.commit()
+
+# ── API Key 操作（config.json）──────────────────────
+
+import json as _json
+
+
+def _config_path() -> str:
+    base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, "config.json")
+
+
+def _read_config() -> dict:
+    try:
+        with open(_config_path(), "r", encoding="utf-8") as f:
+            return _json.load(f)
+    except (FileNotFoundError, _json.JSONDecodeError, IOError):
+        return {}
+
+
+def _write_config(config: dict):
+    with open(_config_path(), "w", encoding="utf-8") as f:
+        _json.dump(config, f, ensure_ascii=False, indent=2)
+
+
+def save_api_key(key: str):
+    """保存 API Key 到 config.json"""
+    cfg = _read_config()
+    cfg["api_key"] = key
+    _write_config(cfg)
 
 
 def get_api_key() -> Optional[str]:
-    """获取加密的 API Key，无记录返回 None"""
-    row = get_conn().execute("SELECT encrypted_key FROM api_keys ORDER BY id DESC LIMIT 1").fetchone()
-    return row["encrypted_key"] if row else None
+    """从 config.json 读取 API Key"""
+    return _read_config().get("api_key")
+
+
+def delete_api_key():
+    """删除 config.json 中的 API Key"""
+    cfg = _read_config()
+    cfg.pop("api_key", None)
+    _write_config(cfg)
 
 
 # ── 余额快照操作 ─────────────────────────────────

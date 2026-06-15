@@ -2,10 +2,9 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                 QLineEdit, QPushButton, QComboBox, QFrame)
 from PySide6.QtCore import Signal, Qt
-from storage import (save_api_key, get_api_key, get_setting, set_setting,
-                     export_all_snapshots, get_history_dir)
-from crypto import encrypt, decrypt
-from theme import THEMES, DEFAULT_THEME
+from storage import (save_api_key, get_api_key, delete_api_key, get_setting,
+                     set_setting, export_all_snapshots, get_history_dir)
+
 
 INTERVAL_OPTIONS = [
     ("5 分钟", "300"),
@@ -19,7 +18,6 @@ INTERVAL_OPTIONS = [
 class SettingsPage(QWidget):
     api_key_saved = Signal()
     interval_changed = Signal(int)
-    theme_changed = Signal(str)
     data_exported = Signal(str)
 
     def __init__(self, parent=None):
@@ -53,6 +51,12 @@ class SettingsPage(QWidget):
         save_btn.setObjectName("btn-primary")
         save_btn.clicked.connect(self._save_key)
         key_row.addWidget(save_btn)
+
+        del_btn = QPushButton("🗑 删除 Key")
+        del_btn.setObjectName("btn-secondary")
+        del_btn.clicked.connect(self._delete_key)
+        key_row.addWidget(del_btn)
+
         key_row.addStretch()
         layout.addLayout(key_row)
 
@@ -65,14 +69,6 @@ class SettingsPage(QWidget):
         self.interval_combo.currentIndexChanged.connect(self._on_interval_changed)
         layout.addWidget(self.interval_combo)
 
-        layout.addWidget(self._divider())
-
-        theme_header = QHBoxLayout()
-        theme_header.addWidget(QLabel("🎨 当前主题"))
-        self.theme_label = QLabel("靛蓝流光")
-        theme_header.addWidget(self.theme_label)
-        theme_header.addStretch()
-        layout.addLayout(theme_header)
 
         layout.addWidget(self._divider())
         layout.addWidget(QLabel("📦 数据管理"))
@@ -92,7 +88,7 @@ class SettingsPage(QWidget):
 
         layout.addWidget(self._divider())
         about = QLabel("DeepSeek Monitor v1.0.0\n基于 PySide6 · 深空玻璃 9 色主题\n数据来源：DeepSeek 官方余额 API")
-        about.setStyleSheet("font-size:11px; color: #64748B;")
+        about.setObjectName("about-text")
         about.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(about)
         layout.addStretch()
@@ -100,18 +96,13 @@ class SettingsPage(QWidget):
     def _divider(self):
         d = QFrame()
         d.setFrameShape(QFrame.Shape.HLine)
-        d.setStyleSheet("QFrame{background: rgba(255,255,255,0.06); max-height:1px;}")
+        d.setObjectName("settings-divider")
         return d
 
     def _load_values(self):
-        encrypted = get_api_key()
-        if encrypted:
-            try:
-                plain = decrypt(encrypted)
-                self.key_input.setText(plain)
-            except Exception:
-                self.key_input.setText("")
-                self.key_input.setPlaceholderText("解密 Key 失败，请重新输入")
+        key = get_api_key()
+        if key:
+            self.key_input.setText(key)
         val = get_setting("refresh_interval", "600")
         for i in range(self.interval_combo.count()):
             if self.interval_combo.itemData(i) == val:
@@ -120,13 +111,13 @@ class SettingsPage(QWidget):
 
     def _save_key(self):
         plain = self.key_input.text().strip()
-        if plain:
-            enc = encrypt(plain)
-            save_api_key(enc)
-            self.api_key_saved.emit()
-        else:
-            save_api_key("")
-            self.api_key_saved.emit()
+        save_api_key(plain)
+        self.api_key_saved.emit()
+
+    def _delete_key(self):
+        self.key_input.clear()
+        delete_api_key()
+        self.api_key_saved.emit()
 
     def _on_interval_changed(self, idx):
         val = self.interval_combo.itemData(idx)
@@ -142,5 +133,3 @@ class SettingsPage(QWidget):
         d = get_history_dir()
         os.startfile(d)
 
-    def update_theme_name(self, theme_name: str):
-        self.theme_label.setText(THEMES.get(theme_name, {}).name or theme_name)
