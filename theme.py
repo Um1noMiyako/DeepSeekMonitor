@@ -113,11 +113,21 @@ QComboBox:hover {{
     border-color: {glass_border_hover};
 }}
 QComboBox QAbstractItemView {{
-    background: {bg_elevated};
+    background-color: {bg_elevated};
     border: 1px solid {glass_border};
     color: {text_primary};
     selection-background-color: {accent_light};
     selection-color: {text_primary};
+    outline: none;
+}}
+QComboBox QAbstractItemView::item {{
+    background-color: {bg_elevated};
+    color: {text_primary};
+    padding: 6px 12px;
+}}
+QComboBox QAbstractItemView::item:selected {{
+    background-color: {accent_light};
+    color: {accent_1};
 }}
 
 /* === 标签页 === */
@@ -315,10 +325,35 @@ QWidget#popup-titlebar {{
 
 POPUP_QSS = ""
 
+COMBO_DROPDOWN = """
+QAbstractItemView {{
+    background-color: {bg_elevated};
+    border: 1px solid {glass_border};
+    color: {text_primary};
+    font-size: 13px;
+    outline: none;
+}}
+QAbstractItemView::item {{
+    background-color: {bg_elevated};
+    color: {text_primary};
+    padding: 6px 12px;
+}}
+QAbstractItemView::item:selected {{
+    background-color: {accent_light};
+    color: {accent_1};
+}}
+"""
+
 
 def generate_qss() -> str:
     vals = dict(THEME.__dict__)
     return GLOBAL_QSS.format(**vals)
+
+
+def generate_combo_dropdown_qss() -> str:
+    """专门给 QComboBox.view().setStyleSheet() 用的下拉样式"""
+    vals = dict(THEME.__dict__)
+    return COMBO_DROPDOWN.format(**vals)
 
 
 def generate_popup_qss() -> str:

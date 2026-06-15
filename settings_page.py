@@ -8,7 +8,7 @@ from storage import (save_api_key, get_api_key, delete_api_key, get_setting,
                      set_setting, export_all_snapshots, get_history_dir,
                      get_presets, add_preset, update_preset, delete_preset,
                      set_active_preset, get_active_preset_key)
-from theme import generate_qss
+from theme import generate_qss, generate_combo_dropdown_qss
 
 
 INTERVAL_OPTIONS = [
@@ -127,6 +127,7 @@ class SettingsPage(QWidget):
 
         layout.addWidget(QLabel("⏱ 自动刷新间隔"))
         self.interval_combo = QComboBox()
+        self.interval_combo.view().setStyleSheet(generate_combo_dropdown_qss())
         for label, val in INTERVAL_OPTIONS:
             self.interval_combo.addItem(label, val)
         self.interval_combo.currentIndexChanged.connect(self._on_interval_changed)
@@ -172,6 +173,7 @@ class SettingsPage(QWidget):
 
         select_row = QHBoxLayout()
         self.preset_combo = QComboBox()
+        self.preset_combo.view().setStyleSheet(generate_combo_dropdown_qss())
         self.preset_combo.setMinimumWidth(200)
         select_row.addWidget(self.preset_combo)
 
