@@ -8,7 +8,7 @@ from storage import (save_api_key, get_api_key, delete_api_key, get_setting,
                      set_setting, export_all_snapshots, get_history_dir,
                      get_presets, add_preset, update_preset, delete_preset,
                      set_active_preset, get_active_preset_key)
-from theme import generate_qss, generate_combo_dropdown_qss
+from theme import generate_qss, generate_combo_dropdown_qss, styled_msgbox
 
 
 INTERVAL_OPTIONS = [
@@ -51,12 +51,12 @@ class PresetDialog(QDialog):
     def _validate(self):
         name = self.name_input.text().strip()
         if not name:
-            QMessageBox.warning(self, "提示", "预设名称不能为空")
+            styled_msgbox(self, QMessageBox.Warning, "提示", "预设名称不能为空").exec()
             return
         if not self._preset:
             key = self.key_input.text().strip()
             if not key:
-                QMessageBox.warning(self, "提示", "API Key 不能为空")
+                styled_msgbox(self, QMessageBox.Warning, "提示", "API Key 不能为空").exec()
                 return
         self.accept()
 
@@ -225,8 +225,8 @@ class SettingsPage(QWidget):
         if preset_id:
             set_active_preset(int(preset_id))
             self.api_key_saved.emit()
-            QMessageBox.information(self, "切换成功",
-                                    f"已切换到预设「{self.preset_combo.currentText()}」")
+            styled_msgbox(self, QMessageBox.Information, "切换成功",
+                           f"已切换到预设「{self.preset_combo.currentText()}」").exec()
         else:
             set_active_preset(None)
             self.api_key_saved.emit()
@@ -240,12 +240,12 @@ class SettingsPage(QWidget):
                 add_preset(name, key)
                 self._load_presets()
             except ValueError as e:
-                QMessageBox.warning(self, "添加失败", str(e))
+                styled_msgbox(self, QMessageBox.Warning, "添加失败", str(e)).exec()
 
     def _edit_preset_dialog(self):
         preset_id = self.preset_combo.currentData()
         if not preset_id:
-            QMessageBox.information(self, "提示", "请先选择一个预设")
+            styled_msgbox(self, QMessageBox.Information, "提示", "请先选择一个预设").exec()
             return
         presets = get_presets()
         preset = next((p for p in presets if p["id"] == preset_id), None)
@@ -259,18 +259,18 @@ class SettingsPage(QWidget):
                 update_preset(preset_id, name=name, key=key if key else None)
                 self._load_presets()
             except ValueError as e:
-                QMessageBox.warning(self, "修改失败", str(e))
+                styled_msgbox(self, QMessageBox.Warning, "修改失败", str(e)).exec()
 
     def _delete_preset_confirm(self):
         preset_id = self.preset_combo.currentData()
         if not preset_id:
-            QMessageBox.information(self, "提示", "请先选择一个预设")
+            styled_msgbox(self, QMessageBox.Information, "提示", "请先选择一个预设").exec()
             return
         name = self.preset_combo.currentText()
-        reply = QMessageBox.question(
-            self, "确认删除", f"确定删除预设「{name}」吗？",
+        reply = styled_msgbox(
+            self, QMessageBox.Question, "确认删除", f"确定删除预设「{name}」吗？",
             QMessageBox.Yes | QMessageBox.No
-        )
+        ).exec()
         if reply == QMessageBox.Yes:
             delete_preset(preset_id)
             self._load_presets()
@@ -280,7 +280,7 @@ class SettingsPage(QWidget):
         """将当前输入框的 Key 一键存为预设"""
         key = self.key_input.text().strip()
         if not key:
-            QMessageBox.information(self, "提示", "请先在 API Key 输入框中输入 Key")
+            styled_msgbox(self, QMessageBox.Information, "提示", "请先在 API Key 输入框中输入 Key").exec()
             return
         dialog = PresetDialog(self)
         dialog.key_input.setText(key)
@@ -290,7 +290,7 @@ class SettingsPage(QWidget):
                 add_preset(name, key)
                 self._load_presets()
             except ValueError as e:
-                QMessageBox.warning(self, "添加失败", str(e))
+                styled_msgbox(self, QMessageBox.Warning, "添加失败", str(e)).exec()
 
     def _divider(self):
         d = QFrame()

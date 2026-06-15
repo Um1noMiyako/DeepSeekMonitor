@@ -130,6 +130,29 @@ QComboBox QAbstractItemView::item:selected {{
     color: {accent_1};
 }}
 
+/* === 消息弹窗 === */
+QMessageBox {{
+    background-color: {bg_surface};
+}}
+QMessageBox QLabel {{
+    color: {text_primary};
+    background: transparent;
+    font-size: 13px;
+}}
+QMessageBox QPushButton {{
+    background: {glass_bg};
+    color: {text_primary};
+    border: 1px solid {glass_border};
+    border-radius: 8px;
+    padding: 6px 20px;
+    min-width: 80px;
+    font-size: 13px;
+}}
+QMessageBox QPushButton:hover {{
+    background: {bg_elevated};
+    border-color: {glass_border_hover};
+}}
+
 /* === 标签页 === */
 QTabWidget::pane {{
     border: 1px solid {glass_border};
@@ -358,3 +381,13 @@ def generate_combo_dropdown_qss() -> str:
 
 def generate_popup_qss() -> str:
     return generate_qss()
+
+
+def styled_msgbox(parent, icon, title, text, buttons=None):
+    """创建已应用皓白流光主题的 QMessageBox，buttons 默认 QMessageBox.Ok"""
+    from PySide6.QtWidgets import QMessageBox
+    if buttons is None:
+        buttons = QMessageBox.Ok
+    box = QMessageBox(icon, title, text, buttons, parent)
+    box.setStyleSheet(generate_qss())
+    return box

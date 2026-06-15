@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                 QTableWidgetItem, QHeaderView, QFrame, QMessageBox)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
-from theme import generate_qss
+from theme import generate_qss, styled_msgbox
 from storage import get_recent_snapshots, get_latest_snapshot, get_setting, get_history_dir
 from settings_page import SettingsPage
 import os
@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
             self.history.load_data()
 
     def _on_export_done(self, filepath):
-        QMessageBox.information(self, "导出成功", f"历史数据已导出到：\n{filepath}")
+        styled_msgbox(self, QMessageBox.Information, "导出成功", f"历史数据已导出到：\n{filepath}").exec()
 
     def closeEvent(self, event):
         event.ignore()
