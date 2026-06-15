@@ -7,3 +7,6 @@ venv/
 dist/
 build/
 *.spec
+data/
+config.json
+api_key.txt
