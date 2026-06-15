@@ -29,10 +29,8 @@ def main():
     server = QLocalServer(app)
     server.listen("DeepSeekMonitor")
 
-    from theme import generate_qss, DEFAULT_THEME
-    from storage import get_setting
-    theme_name = get_setting("theme", DEFAULT_THEME) or DEFAULT_THEME
-    app.setStyleSheet(generate_qss(theme_name))
+    from theme import generate_qss
+    app.setStyleSheet(generate_qss())
 
     monitor = MonitorApp(app)
     monitor.start()

@@ -2,7 +2,6 @@
 from PySide6.QtCore import QThread, Signal
 from api import fetch_balance, Balance, BalanceError
 from storage import get_api_key as db_get_api_key, insert_snapshot, get_setting
-from crypto import decrypt
 
 
 class RefreshWorker(QThread):
@@ -37,31 +36,33 @@ class RefreshWorker(QThread):
 
     def _refresh(self):
         """执行一次刷新"""
-        encrypted = db_get_api_key()
-        if not encrypted:
-            self.no_key.emit()
-            return
+        try:
+            api_key = db_get_api_key()
+            if not api_key:
+                self.no_key.emit()
+                return
 
-        api_key = decrypt(encrypted)
-        result = fetch_balance(api_key)
+            result = fetch_balance(api_key)
 
-        if isinstance(result, Balance):
-            self._fail_count = 0
-            for info in result.balance_infos:
-                try:
-                    insert_snapshot(
-                        total=float(info.total_balance),
-                        granted=float(info.granted_balance),
-                        topped_up=float(info.topped_up_balance),
-                        is_available=result.is_available,
-                        currency=info.currency,
-                    )
-                except (ValueError, TypeError):
-                    pass
-            self.balance_ready.emit(result)
-        else:
-            self._fail_count += 1
-            self.error_occurred.emit(result.message)
+            if isinstance(result, Balance):
+                self._fail_count = 0
+                for info in result.balance_infos:
+                    try:
+                        insert_snapshot(
+                            total=float(info.total_balance),
+                            granted=float(info.granted_balance),
+                            topped_up=float(info.topped_up_balance),
+                            is_available=result.is_available,
+                            currency=info.currency,
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                self.balance_ready.emit(result)
+            else:
+                self._fail_count += 1
+                self.error_occurred.emit(result.message)
+        except Exception as e:
+            self.error_occurred.emit(f"刷新异常: {e}")
 
     def _get_interval_seconds(self) -> int:
         try:

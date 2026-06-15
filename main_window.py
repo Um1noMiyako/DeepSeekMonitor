@@ -4,10 +4,9 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                 QTableWidgetItem, QHeaderView, QFrame, QMessageBox)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
-from theme import generate_qss, THEMES, DEFAULT_THEME
+from theme import generate_qss
 from storage import get_recent_snapshots, get_latest_snapshot, get_setting, get_history_dir
 from settings_page import SettingsPage
-from popup import ThemeSwatch, SWATCH_COLORS
 import os
 
 
@@ -24,16 +23,18 @@ class OverviewTab(QWidget):
         layout.setSpacing(12)
 
         header = QHBoxLayout()
-        header.addWidget(QLabel("💰 账户余额"))
+        header_label = QLabel("💰 账户余额")
+        header_label.setObjectName("overview-header")
+        header.addWidget(header_label)
         header.addStretch()
         refresh_btn = QPushButton("🔄 手动刷新")
-        refresh_btn.setObjectName("btn-secondary")
+        refresh_btn.setObjectName("overview-refresh")
         refresh_btn.clicked.connect(self.refresh_clicked.emit)
         header.addWidget(refresh_btn)
         layout.addLayout(header)
 
         self.balance_amount = QLabel("--.--")
-        self.balance_amount.setObjectName("balance-large")
+        self.balance_amount.setObjectName("overview-balance")
         self.balance_amount.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.balance_amount)
 
@@ -44,7 +45,7 @@ class OverviewTab(QWidget):
         self.status_dot.setObjectName("dot-gray")
         status_row.addWidget(self.status_dot)
         self.status_label = QLabel("未配置 Key")
-        self.status_label.setStyleSheet("font-size:12px;")
+        self.status_label.setObjectName("overview-status")
         status_row.addWidget(self.status_label)
         status_row.addStretch()
         layout.addLayout(status_row)
@@ -56,9 +57,11 @@ class OverviewTab(QWidget):
         ctl = QVBoxLayout(card_topup)
         ctl.setContentsMargins(16, 14, 16, 14)
         ctl.setSpacing(4)
-        ctl.addWidget(QLabel("💰 充值余额"))
+        card_topup_label = QLabel("💰 充值余额")
+        card_topup_label.setObjectName("overview-card-label")
+        ctl.addWidget(card_topup_label)
         self.topup_amount = QLabel("--.--")
-        self.topup_amount.setStyleSheet("font-size:22px; font-weight:700;")
+        self.topup_amount.setObjectName("overview-card-amount")
         ctl.addWidget(self.topup_amount)
         cards.addWidget(card_topup)
 
@@ -67,9 +70,11 @@ class OverviewTab(QWidget):
         cgl = QVBoxLayout(card_grant)
         cgl.setContentsMargins(16, 14, 16, 14)
         cgl.setSpacing(4)
-        cgl.addWidget(QLabel("🎁 赠送余额"))
+        card_grant_label = QLabel("🎁 赠送余额")
+        card_grant_label.setObjectName("overview-card-label")
+        cgl.addWidget(card_grant_label)
         self.granted_amount = QLabel("--.--")
-        self.granted_amount.setStyleSheet("font-size:22px; font-weight:700;")
+        self.granted_amount.setObjectName("overview-card-amount")
         cgl.addWidget(self.granted_amount)
         cards.addWidget(card_grant)
         layout.addLayout(cards)
@@ -77,21 +82,21 @@ class OverviewTab(QWidget):
         info_row = QHBoxLayout()
         info_row.addWidget(QLabel("📊 总余额"))
         self.total_label = QLabel("--.--")
-        self.total_label.setStyleSheet("font-size:18px; font-weight:700;")
+        self.total_label.setObjectName("overview-total")
         info_row.addWidget(self.total_label)
         info_row.addStretch()
         self.currency_label = QLabel("")
-        self.currency_label.setStyleSheet("font-size:12px;")
+        self.currency_label.setObjectName("overview-currency")
         info_row.addWidget(self.currency_label)
         layout.addLayout(info_row)
 
         extra = QHBoxLayout()
         self.response_time_label = QLabel("响应时间: -- ms")
-        self.response_time_label.setObjectName("text-muted")
+        self.response_time_label.setObjectName("overview-response-time")
         extra.addWidget(self.response_time_label)
         extra.addStretch()
         self.fetched_label = QLabel("")
-        self.fetched_label.setObjectName("text-muted")
+        self.fetched_label.setObjectName("overview-fetched")
         extra.addWidget(self.fetched_label)
         layout.addLayout(extra)
         layout.addStretch()
@@ -139,7 +144,9 @@ class HistoryTab(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 16, 24, 24)
         layout.setSpacing(12)
-        layout.addWidget(QLabel("📅 余额变化记录（最近 30 天）"))
+        title = QLabel("📅 余额变化记录（最近 30 天）")
+        title.setObjectName("history-title")
+        layout.addWidget(title)
 
         self.table = QTableWidget()
         self.table.setColumnCount(5)
@@ -156,11 +163,11 @@ class HistoryTab(QWidget):
 
         footer = QHBoxLayout()
         hint = QLabel("30 天前数据已自动归档至 history/ 文件夹")
-        hint.setObjectName("text-muted")
+        hint.setObjectName("history-hint")
         footer.addWidget(hint)
         footer.addStretch()
         open_btn = QPushButton("📂 打开文件夹")
-        open_btn.setObjectName("btn-secondary")
+        open_btn.setObjectName("history-open")
         open_btn.clicked.connect(lambda: os.startfile(get_history_dir()))
         footer.addWidget(open_btn)
         layout.addLayout(footer)
@@ -179,13 +186,13 @@ class HistoryTab(QWidget):
 
 class MainWindow(QMainWindow):
     refresh_clicked = Signal()
-    theme_switched = Signal(str)
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("DeepSeek Monitor")
         self.setMinimumSize(520, 560)
         self.resize(600, 640)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "icon.png")
         if os.path.exists(icon_path):
@@ -203,17 +210,21 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+
+        # 内容层
+        content = QWidget()
+        content.setStyleSheet("background: transparent;")
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+
         titlebar = QHBoxLayout()
         titlebar.setContentsMargins(16, 8, 12, 8)
         titlebar.addWidget(QLabel("🐋 DeepSeek Monitor"))
         titlebar.addStretch()
 
-        for color, theme_name in SWATCH_COLORS:
-            sw = ThemeSwatch(color, theme_name)
-            sw.clicked.connect(lambda checked, tn=theme_name: self.theme_switched.emit(tn))
-            titlebar.addWidget(sw)
 
-        layout.addLayout(titlebar)
+        content_layout.addLayout(titlebar)
 
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
@@ -225,19 +236,17 @@ class MainWindow(QMainWindow):
 
         self.settings_page = SettingsPage()
         self.settings_page.api_key_saved.connect(self.refresh_clicked.emit)
-        self.settings_page.theme_changed.connect(self.theme_switched.emit)
         self.settings_page.data_exported.connect(self._on_export_done)
 
         self.tabs.addTab(self.overview, "概览")
         self.tabs.addTab(self.history, "历史")
         self.tabs.addTab(self.settings_page, "设置")
 
-        layout.addWidget(self.tabs)
+        content_layout.addWidget(self.tabs)
+        layout.addWidget(content)
 
     def _apply_theme(self):
-        theme_name = get_setting("theme", DEFAULT_THEME) or DEFAULT_THEME
-        qss = generate_qss(theme_name)
-        self.setStyleSheet(qss)
+        self.setStyleSheet(generate_qss())
 
     def update_balance(self, balance_data: dict | None, status: str = "ok",
                        response_time: float = 0.0):

@@ -1,17 +1,18 @@
 """系统托盘 — QSystemTrayIcon + 左键弹窗 + 右键菜单"""
 from PySide6.QtWidgets import QSystemTrayIcon, QMenu, QApplication
 from PySide6.QtGui import QIcon, QAction
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QObject
 from popup import PopupWindow
 from main_window import MainWindow
 import os
 
 
-class TrayManager:
+class TrayManager(QObject):
     refresh_requested = Signal()
     quit_requested = Signal()
 
     def __init__(self, app: QApplication):
+        super().__init__(app)
         self._app = app
         self._popup: PopupWindow | None = None
         self._main_window: MainWindow | None = None
@@ -54,7 +55,6 @@ class TrayManager:
             self._popup = PopupWindow()
             self._popup.refresh_requested.connect(self.refresh_requested.emit)
             self._popup.settings_requested.connect(self._show_main_window_settings)
-            self._popup.theme_changed.connect(self._on_popup_theme_change)
         tray_geo = self._tray.geometry()
         pos = tray_geo.center()
         pos.setY(tray_geo.top())
@@ -64,7 +64,6 @@ class TrayManager:
         if self._main_window is None:
             self._main_window = MainWindow()
             self._main_window.refresh_clicked.connect(self.refresh_requested.emit)
-            self._main_window.theme_switched.connect(self._on_main_theme_change)
         self._main_window.show()
         self._main_window.raise_()
         self._main_window.activateWindow()
@@ -74,23 +73,6 @@ class TrayManager:
         if self._main_window:
             self._main_window.tabs.setCurrentIndex(2)
 
-    def _on_popup_theme_change(self, theme_name: str):
-        from storage import set_setting
-        set_setting("theme", theme_name)
-        self._apply_theme_to_all(theme_name)
-
-    def _on_main_theme_change(self, theme_name: str):
-        from storage import set_setting
-        set_setting("theme", theme_name)
-        self._apply_theme_to_all(theme_name)
-
-    def _apply_theme_to_all(self, theme_name: str):
-        from theme import generate_qss, generate_popup_qss
-        self._app.setStyleSheet(generate_qss(theme_name))
-        if self._popup:
-            self._popup.setStyleSheet(generate_popup_qss(theme_name))
-        if self._main_window:
-            self._main_window.setStyleSheet(generate_qss(theme_name))
 
     def update_popup(self, balance_data: dict | None, status: str = "ok",
                      response_time: float = 0.0):
