@@ -4,6 +4,7 @@ from PySide6.QtGui import QIcon, QAction
 from PySide6.QtCore import Signal, QObject
 from popup import PopupWindow
 from main_window import MainWindow
+from storage import get_presets, set_active_preset, get_setting, resolve_api_key
 import os
 
 
@@ -36,10 +37,43 @@ class TrayManager(QObject):
         refresh_action.triggered.connect(self.refresh_requested.emit)
         menu.addAction(refresh_action)
         menu.addSeparator()
+        preset_menu = self._build_preset_submenu()
+        menu.addMenu(preset_menu)
+        menu.addSeparator()
         quit_action = QAction("🚪 退出", menu)
         quit_action.triggered.connect(self.quit_requested.emit)
         menu.addAction(quit_action)
         self._tray.setContextMenu(menu)
+
+    def _build_preset_submenu(self):
+        """构建切换 API Key 子菜单"""
+        menu = QMenu("切换 API Key")
+
+        presets = get_presets()
+        active_id = get_setting("active_preset_id", "")
+
+        if presets:
+            for p in presets:
+                action = menu.addAction(p["name"])
+                action.setCheckable(True)
+                action.setChecked(str(p["id"]) == active_id)
+                action.setData(p["id"])
+                action.triggered.connect(lambda checked, pid=p["id"], pname=p["name"]:
+                    self._switch_preset(pid, pname))
+            menu.addSeparator()
+
+        no_preset_action = menu.addAction("单 Key 模式")
+        no_preset_action.setCheckable(True)
+        no_preset_action.setChecked(not active_id and resolve_api_key() is not None)
+        no_preset_action.triggered.connect(lambda: self._switch_preset(None, "单 Key 模式"))
+
+        return menu
+
+    def _switch_preset(self, preset_id: int | None, name: str):
+        """切换预设并触发刷新"""
+        set_active_preset(preset_id)
+        self.refresh_requested.emit()
+        self.show_message("DeepSeek Monitor", f"已切换到「{name}」")
 
     def _on_activated(self, reason: QSystemTrayIcon.ActivationReason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
