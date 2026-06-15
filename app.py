@@ -2,7 +2,7 @@
 from PySide6.QtCore import QObject
 from tray import TrayManager
 from worker import RefreshWorker
-from storage import init_db, get_latest_snapshot, get_api_key as db_get_api_key
+from storage import init_db, get_latest_snapshot, resolve_api_key
 
 
 class MonitorApp(QObject):
@@ -18,7 +18,7 @@ class MonitorApp(QObject):
         self._tray.refresh_requested.connect(self._refresh_now)
         self._tray.quit_requested.connect(self._quit)
 
-        if not db_get_api_key():
+        if not resolve_api_key():
             self._tray.show_message("DeepSeek Monitor", "请右键托盘菜单打开详情 → 设置页配置 API Key")
             self._tray.set_icon_tooltip("未配置 API Key")
 
@@ -53,7 +53,7 @@ class MonitorApp(QObject):
 
     def _refresh_ui_from_snapshot(self, snap: dict | None, status: str = "ok"):
         if snap is None:
-            status = "no_key" if not db_get_api_key() else "ok"
+            status = "no_key" if not resolve_api_key() else "ok"
         self._tray.update_popup(snap, status)
         self._tray.update_main_window(snap, status)
 

@@ -1,7 +1,7 @@
 """后台刷新线程 — QThread 定时拉取余额"""
 from PySide6.QtCore import QThread, Signal
 from api import fetch_balance, Balance, BalanceError
-from storage import get_api_key as db_get_api_key, insert_snapshot, get_setting
+from storage import resolve_api_key, insert_snapshot, get_setting
 
 
 class RefreshWorker(QThread):
@@ -37,7 +37,7 @@ class RefreshWorker(QThread):
     def _refresh(self):
         """执行一次刷新"""
         try:
-            api_key = db_get_api_key()
+            api_key = resolve_api_key()
             if not api_key:
                 self.no_key.emit()
                 return
