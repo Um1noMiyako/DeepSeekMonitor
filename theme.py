@@ -296,7 +296,9 @@ QPushButton#history-open:hover {{ background: {bg_elevated}; border-color: {glas
 
 /* === 设置页 === */
 QLabel#about-text {{ font-size: 11px; color: {text_muted}; }}
+QLabel#preset-hint {{ font-size: 11px; color: {text_muted}; }}
 QFrame#settings-divider {{ background: {glass_border}; max-height: 1px; }}
+QDialog {{ background: {bg_surface}; color: {text_primary}; }}
 
 /* === 浮窗专用 === */
 QWidget#popup-root {{

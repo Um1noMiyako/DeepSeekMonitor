@@ -7,6 +7,7 @@ from storage import (save_api_key, get_api_key, delete_api_key, get_setting,
                      set_setting, export_all_snapshots, get_history_dir,
                      get_presets, add_preset, update_preset, delete_preset,
                      set_active_preset, get_active_preset_key)
+from theme import generate_qss
 
 
 INTERVAL_OPTIONS = [
@@ -25,6 +26,7 @@ class PresetDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("编辑预设" if preset else "新增预设")
         self.setMinimumWidth(400)
+        self.setStyleSheet(generate_qss())
         self._preset = preset
 
         layout = QFormLayout(self)
