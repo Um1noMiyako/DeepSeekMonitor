@@ -2,6 +2,7 @@
 import sqlite3
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -9,9 +10,23 @@ from typing import Optional
 _DB = None  # 单例连接
 
 
+def app_dir() -> str:
+    """应用根目录 — exe 同目录（PyInstaller）或源码同目录（python）"""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def resource_dir() -> str:
+    """资源目录 — PyInstaller 解压临时目录或源码同目录"""
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 def get_db_path() -> str:
     """获取数据库文件路径 — exe 同级 data/ 目录下"""
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = app_dir()
     data_dir = os.path.join(base, "data")
     os.makedirs(data_dir, exist_ok=True)
     return os.path.join(data_dir, "deepseek_monitor.db")
@@ -71,7 +86,7 @@ import json as _json
 
 
 def _config_path() -> str:
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = app_dir()
     return os.path.join(base, "config.json")
 
 
@@ -241,7 +256,7 @@ def resolve_api_key() -> str | None:
     if key:
         return key
 
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = app_dir()
 
     # ③ api_key.txt
     key = _read_key_file(os.path.join(base, "api_key.txt"))
@@ -309,7 +324,7 @@ def _cleanup_old_snapshots():
         return
 
     # 导出到 history/
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = app_dir()
     history_dir = os.path.join(base, "history")
     os.makedirs(history_dir, exist_ok=True)
 
@@ -349,7 +364,7 @@ def export_all_snapshots() -> str:
     rows = get_conn().execute(
         "SELECT * FROM balance_snapshots ORDER BY fetched_at DESC"
     ).fetchall()
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = app_dir()
     history_dir = os.path.join(base, "history")
     os.makedirs(history_dir, exist_ok=True)
     filepath = os.path.join(history_dir, f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
@@ -386,7 +401,7 @@ def set_setting(key: str, value: str):
 
 def get_history_dir() -> str:
     """获取 history 目录路径"""
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = app_dir()
     history_dir = os.path.join(base, "history")
     os.makedirs(history_dir, exist_ok=True)
     return history_dir

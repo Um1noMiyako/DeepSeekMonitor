@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 from theme import generate_qss, styled_msgbox
-from storage import get_recent_snapshots, get_latest_snapshot, get_setting, get_history_dir
+from storage import get_recent_snapshots, get_latest_snapshot, get_setting, get_history_dir, resource_dir
 from settings_page import SettingsPage
 import os
 
@@ -194,7 +194,7 @@ class MainWindow(QMainWindow):
         self.resize(600, 640)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "icon.png")
+        icon_path = os.path.join(resource_dir(), "resources", "icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 

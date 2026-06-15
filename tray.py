@@ -4,7 +4,7 @@ from PySide6.QtGui import QIcon, QAction
 from PySide6.QtCore import Signal, QObject
 from popup import PopupWindow
 from main_window import MainWindow
-from storage import get_presets, set_active_preset, get_setting, resolve_api_key
+from storage import get_presets, set_active_preset, get_setting, resolve_api_key, resource_dir
 import os
 
 
@@ -18,7 +18,7 @@ class TrayManager(QObject):
         self._popup: PopupWindow | None = None
         self._main_window: MainWindow | None = None
 
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "icon.png")
+        icon_path = os.path.join(resource_dir(), "resources", "icon.png")
         icon = QIcon(icon_path) if os.path.exists(icon_path) else app.style().standardIcon(
             app.style().StandardPixmap.SP_ComputerIcon)
 
