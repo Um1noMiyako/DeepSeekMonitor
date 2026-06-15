@@ -107,6 +107,93 @@ def delete_api_key():
     _write_config(cfg)
 
 
+# ── API Key 预设操作 ────────────────────────────────
+
+
+def get_presets() -> list[dict]:
+    """返回所有预设列表，按创建时间升序"""
+    rows = get_conn().execute(
+        "SELECT id, name, created_at, updated_at FROM key_presets ORDER BY created_at ASC"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_preset(name: str, key: str) -> int:
+    """新增预设，返回新记录 ID。name 重复时抛出 ValueError"""
+    name = name.strip()
+    key = key.strip()
+    if not name:
+        raise ValueError("预设名称不能为空")
+    if not key:
+        raise ValueError("API Key 不能为空")
+    try:
+        cur = get_conn().execute(
+            "INSERT INTO key_presets (name, key_value) VALUES (?, ?)",
+            (name, key)
+        )
+        get_conn().commit()
+        return cur.lastrowid
+    except sqlite3.IntegrityError:
+        raise ValueError(f"预设名称「{name}」已存在")
+
+
+def update_preset(id: int, name: str = None, key: str = None):
+    """更新预设的名称或 Key。至少提供一个参数"""
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise ValueError("预设名称不能为空")
+        try:
+            get_conn().execute(
+                "UPDATE key_presets SET name = ?, updated_at = datetime('now', 'localtime') WHERE id = ?",
+                (name, id)
+            )
+        except sqlite3.IntegrityError:
+            raise ValueError(f"预设名称「{name}」已存在")
+    if key is not None:
+        key = key.strip()
+        if not key:
+            raise ValueError("API Key 不能为空")
+        get_conn().execute(
+            "UPDATE key_presets SET key_value = ?, updated_at = datetime('now', 'localtime') WHERE id = ?",
+            (key, id)
+        )
+    get_conn().commit()
+
+
+def delete_preset(id: int):
+    """删除预设。若当前激活的预设被删，自动清除激活状态"""
+    get_conn().execute("DELETE FROM key_presets WHERE id = ?", (id,))
+    # 如果删的是当前激活的预设，清除激活标记
+    active = get_setting("active_preset_id")
+    if active and str(id) == active:
+        set_setting("active_preset_id", "")
+    get_conn().commit()
+
+
+def set_active_preset(id: int | None):
+    """设置当前激活的预设 ID。传 None 或 0 表示清除"""
+    if id:
+        set_setting("active_preset_id", str(id))
+    else:
+        set_setting("active_preset_id", "")
+
+
+def get_active_preset_key() -> str | None:
+    """返回当前激活预设的 Key，没有则返回 None"""
+    active_id = get_setting("active_preset_id")
+    if not active_id:
+        return None
+    row = get_conn().execute(
+        "SELECT key_value FROM key_presets WHERE id = ?", (int(active_id),)
+    ).fetchone()
+    if row is None:
+        # 预设已被删除但 active_preset_id 没清干净
+        set_setting("active_preset_id", "")
+        return None
+    return row["key_value"]
+
+
 # ── 余额快照操作 ─────────────────────────────────
 
 def insert_snapshot(total: float, granted: float, topped_up: float,
