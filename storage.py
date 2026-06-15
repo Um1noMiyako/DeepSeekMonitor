@@ -203,10 +203,20 @@ def get_active_preset_key() -> str | None:
         "SELECT key_value FROM key_presets WHERE id = ?", (int(active_id),)
     ).fetchone()
     if row is None:
-        # 预设已被删除但 active_preset_id 没清干净
         set_setting("active_preset_id", "")
         return None
     return row["key_value"]
+
+
+def get_active_preset_name() -> str | None:
+    """返回当前激活预设的名称，没有则返回 None"""
+    active_id = get_setting("active_preset_id")
+    if not active_id:
+        return None
+    row = get_conn().execute(
+        "SELECT name FROM key_presets WHERE id = ?", (int(active_id),)
+    ).fetchone()
+    return row["name"] if row else None
 
 
 def _read_key_file(path: str) -> str | None:
