@@ -194,6 +194,74 @@ def get_active_preset_key() -> str | None:
     return row["key_value"]
 
 
+def _read_key_file(path: str) -> str | None:
+    """读取纯文本文件，去除首尾空白。文件不存在或内容为空返回 None"""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+        return content if content else None
+    except (FileNotFoundError, IOError):
+        return None
+
+
+def _parse_env_file(path: str) -> dict:
+    """解析 .env 文件，返回 {KEY: VALUE}。忽略 # 注释行和空行"""
+    result = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                result[key.strip()] = val.strip().strip("\"'")
+        return result
+    except (FileNotFoundError, IOError):
+        return {}
+
+
+def resolve_api_key() -> str | None:
+    """
+    多来源链式获取 API Key，按优先级：
+    ① active_preset → SQLite key_presets
+    ② config.json → 兼容旧版
+    ③ api_key.txt → 同级目录
+    ④ .env → DEEPSEEK_API_KEY
+    ⑤ 系统环境变量 DEEPSEEK_API_KEY
+    """
+    # ① active_preset
+    key = get_active_preset_key()
+    if key:
+        return key
+
+    # ② config.json
+    key = get_api_key()
+    if key:
+        return key
+
+    base = os.path.dirname(os.path.abspath(__file__))
+
+    # ③ api_key.txt
+    key = _read_key_file(os.path.join(base, "api_key.txt"))
+    if key:
+        return key
+
+    # ④ .env
+    env = _parse_env_file(os.path.join(base, ".env"))
+    key = env.get("DEEPSEEK_API_KEY")
+    if key:
+        return key
+
+    # ⑤ 系统环境变量
+    key = os.environ.get("DEEPSEEK_API_KEY")
+    if key:
+        return key
+
+    return None
+
+
 # ── 余额快照操作 ─────────────────────────────────
 
 def insert_snapshot(total: float, granted: float, topped_up: float,
